@@ -1,34 +1,39 @@
 package com.devtokihjw.lib.util
 
 import android.os.AsyncTask
-import okhttp3.ResponseBody
-import java.io.*
+import java.io.File
+import java.io.InputStream
 
-fun File.fileToString(): String {
-    val mByteArrayOutputStream = ByteArrayOutputStream().writeOutputStream(inputStream(), null, 0)
-    return String(mByteArrayOutputStream.toByteArray(), Charsets.UTF_8)
-}
-
-fun <T : OutputStream> T.writeOutputStream(inputStream: InputStream, progressUpdate: ((Int) -> Unit)?, fileSize: Long): T {
-    val mByteArray = ByteArray(1024)
-    var tmpLength: Int
-    var loadSize = 0
-    while (true) {
-        tmpLength = inputStream.read(mByteArray)
-        if (tmpLength == -1) {
-            break
-        }
-        write(mByteArray, 0, tmpLength)
-        loadSize += tmpLength
-        progressUpdate?.let { progressUpdate((loadSize * 100 / fileSize).toInt()) }
+fun File.readString() = bufferedReader().useLines { lines ->
+    lines.fold("") { working, line ->
+        "$working\n$line"
     }
-    flush()
-    close()
-    inputStream.close()
-    return this
 }
 
-class SaveFileTask(private val filePath: String, private val fileName: String, private val responseBody: ResponseBody, private val preExecute: () -> Unit, private val progressUpdate: (Int) -> Unit, private val success: (Boolean, String?) -> Unit) : AsyncTask<Any, Int, Any>() {
+fun File.writeString(text: String) {
+    bufferedWriter().use { writer ->
+        writer.write(text)
+    }
+}
+
+fun File.writeFile(inputStream: InputStream, progressUpdate: ((Int) -> Unit)? = null) {
+    outputStream().use { outputStream ->
+        inputStream.use { inputStream ->
+            val mByteArray = ByteArray(DEFAULT_BUFFER_SIZE)
+            val size = inputStream.available()
+            var read: Int
+            var readSize = 0
+            while (inputStream.read(mByteArray).also { read = it } > -1) {
+                outputStream.write(mByteArray, 0, read)
+                readSize += read
+                progressUpdate?.let { progressUpdate((readSize * 100f / size).toInt()) }
+            }
+            outputStream.flush()
+        }
+    }
+}
+
+class DownloadFileTask(private val filePath: String, private val fileName: String, private val inputStream: InputStream, private val preExecute: () -> Unit, private val progressUpdate: (Int) -> Unit, private val success: (Boolean, String?) -> Unit) : AsyncTask<Any, Int, Any>() {
 
     override fun onPreExecute() {
         preExecute()
@@ -36,10 +41,9 @@ class SaveFileTask(private val filePath: String, private val fileName: String, p
 
     override fun doInBackground(vararg p0: Any?): Any? {
         printLog("filePath", "$filePath$fileName")
-        val mFileOutputStream = FileOutputStream("$filePath$fileName")
-        mFileOutputStream.writeOutputStream(responseBody.byteStream(), {
+        File("$filePath$fileName").writeFile(inputStream) {
             publishProgress(it)
-        }, responseBody.contentLength())
+        }
         return null
     }
 

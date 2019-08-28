@@ -14,8 +14,8 @@ fun buildMediaSource(uri: Uri) = ProgressiveMediaSource.Factory(DataSource.Facto
     }
 }).createMediaSource(uri)
 
-fun List<File>.fileListtoMediaSourceList() = arrayListOf<MediaSource>().apply {
-    this@fileListtoMediaSourceList.forEach { file ->
+fun List<File>.fileListToMediaSourceList() = arrayListOf<MediaSource>().apply {
+    this@fileListToMediaSourceList.forEach { file ->
         add(buildMediaSource(Uri.fromFile(file)))
     }
 }

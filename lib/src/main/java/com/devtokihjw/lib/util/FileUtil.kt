@@ -33,7 +33,7 @@ fun File.writeFile(inputStream: InputStream, progressUpdate: ((Int) -> Unit)? = 
     }
 }
 
-class DownloadFileTask(private val filePath: String, private val fileName: String, private val inputStream: InputStream, private val preExecute: (() -> Unit)?, private val progressUpdate: ((Int) -> Unit)?, private val success: (Boolean, String?) -> Unit) : AsyncTask<Any, Int, Any>() {
+class DownloadFileTask(private val filePath: String, private val fileName: String, private val inputStream: InputStream, private val preExecute: (() -> Unit)? = null, private val progressUpdate: ((Int) -> Unit)? = null, private val success: (Boolean, String?) -> Unit) : AsyncTask<Any, Int, Any>() {
 
     override fun onPreExecute() {
         preExecute?.let { it() }
